@@ -357,75 +357,55 @@ print_ui :: proc(elapsed, length: f32, name, artist: string, paused: bool, volum
 }
 
 make_progress_bar :: proc(builder: ^strings.Builder, elapsed, length: f32, width: int, style: Bar_Style) {
+	if width <= 0 {
+		return
+	}
+	progress: f32 = 0.0
+	if length != 0 {
+		progress = math.floor(elapsed) / math.floor(length)
+	}
+
+	progress = clamp(progress, 0.0, 1.0)
+
+	chars: []rune
+
+	total_portions := int(progress * f32(width * 8))
+	full_portions: int
+	partial_portions: int
+
 	switch style {
 		case .THICK:
-		  if width <= 0 {
-		      return
-		  }
-		  progress: f32 = 0.0
-		  if length != 0 {
-		    progress = math.floor(elapsed) / math.floor(length)
-		  }
+		  chars = []rune{'█', '▉', '▊', '▋', '▌', '▍', '▎', '▏'}
 		
-		  progress = clamp(progress, 0.0, 1.0)
+			total_portions = int(progress * f32(width * 8))
 		
-		  chars := []rune{'█', '▉', '▊', '▋', '▌', '▍', '▎', '▏'}
-		
-		  total_eighths := int(progress * f32(width * 8))
-		
-		  full := total_eighths / 8
-		  partial := total_eighths % 8
-		
-		  for i in 0..<full {
-		      strings.write_rune(builder, '█')
-		  }
-		
-		  if full < width && partial > 0 {
-		      strings.write_rune(builder, chars[8 - partial])
-		  }
-		
-		  used := full
-		  if partial > 0 {
-		      used += 1
-		  }
-		
-		  for i in used..<width {
-		      strings.write_rune(builder, ' ')
-		  }
+		  full_portions = total_portions / 8
+		  partial_portions = total_portions % 8
 		case .THIN:
-			if width <= 0 {
-		    return
-		  }
-		  progress: f32 = 0.0
-		  if length != 0 {
-		    progress = math.floor(elapsed) / math.floor(length)
-		  }
+		  chars = []rune{'━', '╸'}
 		
-		  progress = clamp(progress, 0.0, 1.0)
+			total_portions = int(progress * f32(width * 2))
 		
-		  chars := []rune{'━', '╸'}
-		
-		  total_halves := int(progress * f32(width * 2))
-		
-		  full := total_halves / 2
-		  partial := total_halves % 2
-		
-		  for i in 0..<full {
-		      strings.write_rune(builder, '━')
-		  }
-		
-		  if full < width && partial > 0 {
-		    strings.write_rune(builder, chars[2 - partial])
-		  }
-		
-		  used := full
-		  if partial > 0 {
-		    used += 1
-		  }
-		
-		  for i in used..<width {
-		    strings.write_rune(builder, ' ')
-		  }
-		}
+		  full_portions = total_portions / 2
+		  partial_portions = total_portions % 2
+	}
+
+	for i in 0..<full_portions {
+		strings.write_rune(builder, '█')
+	}
+
+  if full_portions < width && partial_portions > 0 {
+		strings.write_rune(builder, chars[8 - partial_portions])
+  }
+
+  used := full_portions
+  if partial_portions > 0 {
+		used += 1
+  }
+
+  for i in used..<width {
+		strings.write_rune(builder, ' ')
+  }
+
 }
 
