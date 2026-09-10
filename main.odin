@@ -1,6 +1,5 @@
 package main
 
-import "vendor:windows/GameInput"
 import "ansi"
 import "term"
 import "core:fmt"
@@ -8,6 +7,7 @@ import "core:math"
 import "core:math/rand"
 import "core:os"
 import "core:path/filepath"
+import "core:strconv"
 import "core:strings"
 import "core:time"
 import rl "vendor:raylib"
@@ -362,40 +362,34 @@ make_progress_bar :: proc(builder: ^strings.Builder, elapsed, length: f32, width
 	}
 	progress: f32 = 0.0
 	if length != 0 {
-		progress = math.floor(elapsed) / math.floor(length)
+		progress = elapsed / length
 	}
 
 	progress = clamp(progress, 0.0, 1.0)
 
 	chars: []rune
-
-	total_portions := int(progress * f32(width * 8))
-	full_portions: int
-	partial_portions: int
+	portions: int
 
 	switch style {
 		case .THICK:
 		  chars = []rune{'█', '▉', '▊', '▋', '▌', '▍', '▎', '▏'}
-		
-			total_portions = int(progress * f32(width * 8))
-		
-		  full_portions = total_portions / 8
-		  partial_portions = total_portions % 8
+			portions = 8
 		case .THIN:
 		  chars = []rune{'━', '╸'}
-		
-			total_portions = int(progress * f32(width * 2))
-		
-		  full_portions = total_portions / 2
-		  partial_portions = total_portions % 2
+			portions = 2
 	}
 
+	total_portions := int(progress * f32(width * portions))
+
+	full_portions := total_portions / portions
+	partial_portions := total_portions % portions
+
 	for i in 0..<full_portions {
-		strings.write_rune(builder, '█')
+		strings.write_rune(builder, chars[0])
 	}
 
   if full_portions < width && partial_portions > 0 {
-		strings.write_rune(builder, chars[8 - partial_portions])
+		strings.write_rune(builder, chars[portions - partial_portions])
   }
 
   used := full_portions
@@ -406,6 +400,5 @@ make_progress_bar :: proc(builder: ^strings.Builder, elapsed, length: f32, width
   for i in used..<width {
 		strings.write_rune(builder, ' ')
   }
-
 }
 
