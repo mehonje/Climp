@@ -197,8 +197,8 @@ main :: proc() {
 	  fmt.print(ansi.HIDE_CURSOR) // hide cursor
     defer fmt.print(ansi.SHOW_CURSOR) // show cursor
 
-		volume := 100
 
+    quit := false
     song_idx := 0
 
     if shuffle {
@@ -210,14 +210,16 @@ main :: proc() {
     rl.InitAudioDevice()
     defer rl.CloseAudioDevice()
 
-    quit := false
     paused := false
+		volume := 100
 
     for song_idx < len(queue) && !quit {
       str := strings.clone_to_cstring(queue[song_idx], context.temp_allocator)
   
       music := rl.LoadMusicStream(str)
   
+      song_length := rl.GetMusicTimeLength(music)
+
       if rl.IsMusicValid(music) {
         music.looping = false 
 
@@ -240,13 +242,12 @@ main :: proc() {
           rl.UpdateMusicStream(music)
 
           elapsed := rl.GetMusicTimePlayed(music)
-          length := rl.GetMusicTimeLength(music)
 
           if !rl.IsMusicStreamPlaying(music) && !paused {
             break
           }
 
-          if !paused && elapsed > length {
+          if !paused && elapsed > song_length {
             break
           }
 
@@ -293,7 +294,7 @@ main :: proc() {
 						rl.SetMusicVolume(music, f32(volume) / 100.0)
 					}
 
-          print_ui(elapsed, length, song_name, song_artist, paused, volume, bar_style)
+          print_ui(elapsed, song_length, song_name, song_artist, paused, volume, bar_style)
 
           time.sleep(16 * time.Millisecond)
         }
