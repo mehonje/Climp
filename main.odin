@@ -268,6 +268,10 @@ main :: proc() {
         	      break song_loop
         	    case 'L':
         	      break song_loop
+							case 'h':
+								rl.SeekMusicStream(music, max(elapsed - 5.0, 0.0))
+							case 'l':
+								rl.SeekMusicStream(music, min(elapsed + 5.0, song_length)) 
 					  	case 'j':
 					  		volume_changed = true
 					  		volume -= 1
