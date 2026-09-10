@@ -364,7 +364,7 @@ make_progress_bar :: proc(builder: ^strings.Builder, elapsed, length: f32, width
 		  }
 		  progress: f32 = 0.0
 		  if length != 0 {
-		    progress = elapsed / length
+		    progress = math.floor(elapsed) / math.floor(length)
 		  }
 		
 		  progress = clamp(progress, 0.0, 1.0)
@@ -398,7 +398,7 @@ make_progress_bar :: proc(builder: ^strings.Builder, elapsed, length: f32, width
 		  }
 		  progress: f32 = 0.0
 		  if length != 0 {
-		    progress = elapsed / length
+		    progress = math.floor(elapsed) / math.floor(length)
 		  }
 		
 		  progress = clamp(progress, 0.0, 1.0)
