@@ -260,13 +260,13 @@ main :: proc() {
         	  switch char {
         	    case 'q':
         	      quit = true
-        	    case 'h':
+        	    case 'H':
         	      song_idx -= 2
         	      if song_idx < -1 { // incremented to 0 later, so it is safe
         	        song_idx = -1
         	      }
         	      break song_loop
-        	    case 'l':
+        	    case 'L':
         	      break song_loop
 					  	case 'j':
 					  		volume_changed = true
