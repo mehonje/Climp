@@ -317,10 +317,6 @@ main :: proc() {
 						bar_style,
 					)
 
-					fmt.println(queue)
-					fmt.println(queue[song_idx])
-					fmt.println(song_idx)
-
 					time.sleep(16 * time.Millisecond)
 				}
 
