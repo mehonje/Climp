@@ -2,11 +2,9 @@ package main
 
 import "ansi"
 import "core:fmt"
-import "core:math"
 import "core:math/rand"
 import "core:os"
 import "core:path/filepath"
-import "core:strconv"
 import "core:strings"
 import "core:time"
 import "term"
@@ -237,9 +235,12 @@ main :: proc() {
 				filename := filepath.short_stem(queue[song_idx])
 				allocated_filename: bool
 				filename, allocated_filename = strings.replace_all(filename, "--", " ")
+
 				split := strings.split(filename, "__")
+
 				song_name := strings.clone(split[0])
 				song_artist := strings.clone(split[1])
+
 				delete(split)
 
 				window_name := fmt.tprintf("{} - {} - climp.exe", song_name, song_artist)
