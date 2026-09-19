@@ -2,6 +2,7 @@ package main
 
 import "ansi"
 import "core:fmt"
+import "core:math"
 import "core:math/rand"
 import "core:os"
 import "core:path/filepath"
@@ -400,7 +401,7 @@ print_ui :: proc(
 	str := fmt.tprintf("%02d:%02d ", elapsed_minutes, elapsed_seconds)
 	strings.write_string(&builder, str)
 
-	make_progress_bar(&builder, elapsed, length, 20, bar_style)
+	make_progress_bar(&builder, math.floor(elapsed), length, 20, bar_style)
 
 	str = fmt.tprintf(" %02d:%02d", length_minutes, length_seconds)
 	strings.write_string(&builder, str)
