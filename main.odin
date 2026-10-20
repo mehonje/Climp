@@ -8,7 +8,8 @@ import "core:os"
 import "core:path/filepath"
 import "core:strings"
 import "core:time"
-import "term"
+import simterm "simpleterm/terminal"
+import keys "simpleterm/terminal/keys"
 import rl "vendor:raylib"
 
 Bar_Style :: enum {
@@ -52,10 +53,9 @@ main :: proc() {
 		fmt.eprintfln("Failed to get binary location: %w", err)
 		return
 	}
+	defer delete(binary_path)
 
 	working_directory := filepath.dir(binary_path)
-
-	delete(binary_path)
 
 	queue: [dynamic]string
 	defer {
@@ -220,17 +220,18 @@ main :: proc() {
 	free_all(context.temp_allocator)
 
 	if len(queue) > 0 { 	// init music player
-		term.enable_utf8()
-
-		cooked_state, raw_ok := term.enable_raw_mode()
-		if !raw_ok {
+		cooked_state, handle, err := simterm.enable_raw_state(true)
+		if err != nil {
 			fmt.eprintln("Error: Failed to enter raw mode")
 			return
 		}
-		defer term.disable_raw_mode(cooked_state)
+		defer simterm.disable_raw_state(&cooked_state, handle)
 
 		fmt.print(ansi.HIDE_CURSOR) // hide cursor
 		defer fmt.print(ansi.SHOW_CURSOR) // show cursor
+
+		buf := make([]u8, 64) // buffer used for user input
+		defer delete(buf)
 
 		split_delimiter: string
 		{
@@ -284,13 +285,20 @@ main :: proc() {
 
 				split := strings.split(filename, split_delimiter)
 
-				song_name := strings.clone(split[0])
-				song_artist := strings.clone(split[1])
+
+				song_name: string
+				if len(split) > 0 {
+					song_name = strings.clone(split[0])
+				}
+				song_artist: string
+				if len(split) > 1 {
+					song_artist = strings.clone(split[1])
+				}
 
 				delete(split)
 
 				window_name := fmt.tprintf("{} - {} - climp.exe", song_name, song_artist)
-				term.set_window_name(window_name)
+				//simterm.set_window_name(window_name)
 
 				rl.PlayMusicStream(music)
 
@@ -309,43 +317,50 @@ main :: proc() {
 
 					volume_changed := false
 
-					char: u8
-					pressed: bool
+					{
+						key_event, ok, err := simterm.read_key_bytes(handle, buf)
 
-					for char, pressed = term.poll_key(); pressed; char, pressed = term.poll_key() {
-						switch char {
-						case 'q':
+						if err != nil {
 							quit = true
-						case 'H':
-							song_idx -= 2
-							if song_idx < -1 { 	// incremented to 0 later, so it is safe
-								song_idx = -1
-							}
 							break song_loop
-						case 'L':
-							break song_loop
-						case 'h':
-							rl.SeekMusicStream(music, max(elapsed - 5.0, 0.0))
-						case 'l':
-							rl.SeekMusicStream(music, min(elapsed + 5.0, song_length))
-						case 'j':
-							volume_changed = true
-							volume -= 1
-							if volume < 0 {
-								volume = 0
-							}
-						case 'k':
-							volume_changed = true
-							volume += 1
-							if volume > 100 {
-								volume = 100
-							}
-						case ' ':
-							paused = !paused
-							if paused {
-								rl.PauseMusicStream(music)
-							} else {
-								rl.ResumeMusicStream(music)
+						}
+
+						if ok {
+							switch key_event {
+							case keys.Key_Event{key = 'q'}:
+								quit = true
+								break song_loop
+							case keys.Key_Event{key = 'h', modifiers = {shift = true}}:
+								song_idx -= 2
+								if song_idx < -1 { 	// incremented to 0 later, so it is safe
+									song_idx = -1
+								}
+								break song_loop
+							case keys.Key_Event{key = 'l', modifiers = {shift = true}}:
+								break song_loop
+							case keys.Key_Event{key = 'h'}:
+								rl.SeekMusicStream(music, max(elapsed - 5.0, 0.0))
+							case keys.Key_Event{key = 'l'}:
+								rl.SeekMusicStream(music, min(elapsed + 5.0, song_length))
+							case keys.Key_Event{key = 'j'}:
+								volume_changed = true
+								volume -= 1
+								if volume < 0 {
+									volume = 0
+								}
+							case keys.Key_Event{key = 'k'}:
+								volume_changed = true
+								volume += 1
+								if volume > 100 {
+									volume = 100
+								}
+							case keys.Key_Event{key = ' '}:
+								paused = !paused
+								if paused {
+									rl.PauseMusicStream(music)
+								} else {
+									rl.ResumeMusicStream(music)
+								}
 							}
 						}
 					}
@@ -379,6 +394,7 @@ main :: proc() {
 		}
 	}
 }
+
 
 print_ui :: proc(
 	elapsed, length: f32,
