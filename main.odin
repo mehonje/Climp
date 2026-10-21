@@ -1,6 +1,7 @@
 package main
 
 import "ansi"
+import "core:encoding/json"
 import "core:fmt"
 import "core:math"
 import "core:math/rand"
@@ -11,6 +12,10 @@ import "core:time"
 import simterm "simpleterm/terminal"
 import keys "simpleterm/terminal/keys"
 import rl "vendor:raylib"
+
+Config :: struct {
+	splitter: string,
+}
 
 Bar_Style :: enum {
 	THIN,
@@ -65,32 +70,50 @@ main :: proc() {
 		delete(queue)
 	}
 
+	config: Config
+	{
+		config_path := fmt.tprintf("{}/data/config.json", working_directory)
+		config_bytes, read_err := os.read_entire_file(config_path, context.allocator)
+		if read_err != nil {
+			fmt.eprintfln("Failed to read \"%s\": %w", config_path, read_err)
+			return
+		}
+		defer delete(config_bytes)
+
+
+		json_err := json.unmarshal(config_bytes, &config)
+		if json_err != nil {
+			fmt.eprintfln("Failed to parse config json: %w", json_err)
+			return
+		}
+	}
+
 	switch args[1] {
 	case "splitter":
 		if len(args) > 2 {
-			file_path := fmt.tprintf("{}/data/split.txt", working_directory)
+			config.splitter = args[2]
 
-			err := os.write_entire_file(file_path, args[2])
-			if err != nil {
-				fmt.eprintfln("Failed to save to %s: %w", file_path, err)
+			file_path := fmt.tprintf("{}/data/config.json", working_directory)
+
+			json_options := json.Marshal_Options {
+				pretty = true,
 			}
-		} else {
-			file_path := fmt.tprintf("{}/data/split.txt", working_directory)
-			file_data, err := os.read_entire_file(file_path, context.allocator)
+
+			json_bytes, json_err := json.marshal(config, json_options)
 			if err != nil {
-				fmt.eprintfln(
-					"Failed to read data/split.txt: %w\nRun \"climp splitter <string>\" to set the split delimiter",
-					err,
-				)
+				fmt.eprintfln("Failed to turn config into a JSON: %w", err)
 				return
 			}
-			defer delete(file_data)
+			defer delete(json_bytes)
 
-			iter := string(file_data)
-			for line in strings.split_lines_iterator(&iter) {
-				fmt.printfln("Splitter: %s", line)
-				break
+			write_err := os.write_entire_file(file_path, json_bytes)
+			if write_err != nil {
+				fmt.eprintfln("Failed to save config to %s: %w", file_path, write_err)
+				return
 			}
+		} else {
+			fmt.printfln("Splitter: %s", config.splitter)
+			return
 		}
 	case "play":
 		file_ext := filepath.ext(args[2])
@@ -233,27 +256,6 @@ main :: proc() {
 		buf := make([]u8, 64) // buffer used for user input
 		defer delete(buf)
 
-		split_delimiter: string
-		{
-			file_path := fmt.tprintf("{}/data/split.txt", working_directory)
-			file_data, err := os.read_entire_file(file_path, context.allocator)
-			if err != nil {
-				fmt.eprintfln(
-					"Failed to read data/split.txt: %w\nRun \"climp splitter <string>\" to set the split delimiter",
-					err,
-				)
-				return
-			}
-			defer delete(file_data)
-
-			iter := string(file_data)
-			for line in strings.split_lines_iterator(&iter) {
-				cloned_line := strings.clone(line)
-				split_delimiter = cloned_line
-				break
-			}
-		}
-
 		quit := false
 		song_idx := 0
 
@@ -283,7 +285,7 @@ main :: proc() {
 
 				filename := filepath.short_stem(queue[song_idx])
 
-				split := strings.split(filename, split_delimiter)
+				split := strings.split(filename, config.splitter)
 
 
 				song_name: string
