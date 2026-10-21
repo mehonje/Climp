@@ -14,7 +14,8 @@ import keys "simpleterm/terminal/keys"
 import rl "vendor:raylib"
 
 Config :: struct {
-	splitter: string,
+	splitter:  string,
+	song_path: string,
 }
 
 Bar_Style :: enum {
@@ -115,6 +116,32 @@ main :: proc() {
 			fmt.printfln("Splitter: %s", config.splitter)
 			return
 		}
+	case "song_path":
+		if len(args) > 2 {
+			config.song_path = args[2]
+
+			file_path := fmt.tprintf("{}/data/config.json", working_directory)
+
+			json_options := json.Marshal_Options {
+				pretty = true,
+			}
+
+			json_bytes, json_err := json.marshal(config, json_options)
+			if err != nil {
+				fmt.eprintfln("Failed to turn config into a JSON: %w", err)
+				return
+			}
+			defer delete(json_bytes)
+
+			write_err := os.write_entire_file(file_path, json_bytes)
+			if write_err != nil {
+				fmt.eprintfln("Failed to save config to %s: %w", file_path, write_err)
+				return
+			}
+		} else {
+			fmt.printfln("Song path: %s", config.song_path)
+			return
+		}
 	case "play":
 		file_ext := filepath.ext(args[2])
 		switch file_ext {
@@ -147,13 +174,13 @@ main :: proc() {
 
 			iter := string(file_data)
 			for line in strings.split_lines_iterator(&iter) {
-				song_path := fmt.tprintf("{}/data/songs/{}", working_directory, line)
+				song_path := fmt.tprintf("{}/{}", config.song_path, line)
 				cloned_line := strings.clone(song_path)
 				append(&queue, cloned_line)
 			}
 		case:
 			// audio file
-			file_path := fmt.tprintf("{}/data/songs/{}", working_directory, args[2])
+			file_path := fmt.tprintf("{}/{}", config.song_path, args[2])
 			cloned := strings.clone(file_path)
 			append(&queue, cloned)
 		}
