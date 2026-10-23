@@ -56,14 +56,12 @@ main :: proc() {
 		}
 	}
 
-	binary_path, err := os.get_executable_path(context.allocator)
+	data_directory, err := os.user_data_dir(context.allocator)
 	if err != nil {
-		fmt.eprintfln("Failed to get binary location: %w", err)
+		fmt.eprintfln("Failed to get data directory: ", err)
 		return
 	}
-	defer delete(binary_path)
-
-	working_directory := filepath.dir(binary_path)
+	defer delete(data_directory)
 
 	queue: [dynamic]string
 	defer {
@@ -75,7 +73,7 @@ main :: proc() {
 
 	config: Config
 	{
-		config_path := fmt.tprintf("{}/data/config.json", working_directory)
+		config_path := fmt.tprintf("{}/climp/config.json", data_directory)
 		config_bytes, read_err := os.read_entire_file(config_path, context.allocator)
 		if read_err != nil {
 			fmt.eprintfln("Failed to read \"%s\": %w", config_path, read_err)
@@ -96,7 +94,7 @@ main :: proc() {
 		if len(args) > 2 {
 			config.splitter = args[2]
 
-			file_path := fmt.tprintf("{}/data/config.json", working_directory)
+			file_path := fmt.tprintf("{}/climp/config.json", data_directory)
 
 			json_options := json.Marshal_Options {
 				pretty = true,
@@ -122,7 +120,7 @@ main :: proc() {
 		if len(args) > 2 {
 			config.song_path = args[2]
 
-			file_path := fmt.tprintf("{}/data/config.json", working_directory)
+			file_path := fmt.tprintf("{}/climp/config.json", data_directory)
 
 			json_options := json.Marshal_Options {
 				pretty = true,
@@ -150,7 +148,7 @@ main :: proc() {
 		case "":
 			// queue
 			if args[2] == "queue" {
-				file_path := fmt.tprintf("{}/data/queue.txt", working_directory)
+				file_path := fmt.tprintf("{}/climp/queue.txt", data_directory)
 				file_data, err := os.read_entire_file(file_path, context.allocator)
 				if err != nil {
 					fmt.eprintfln("Failed to read data/queue.txt: %w", err)
@@ -166,7 +164,7 @@ main :: proc() {
 			}
 		case ".txt":
 			// playlist
-			file_path := fmt.tprintf("{}/data/playlists/{}", working_directory, args[2])
+			file_path := fmt.tprintf("{}/climp/playlists/{}", data_directory, args[2])
 			file_data, err := os.read_entire_file(file_path, context.allocator)
 			if err != nil {
 				fmt.eprintfln("Failed to read %s: %w", file_path, err)
@@ -207,7 +205,7 @@ main :: proc() {
 			}
 		case ".txt":
 			// playlist
-			file_path := fmt.tprintf("{}/data/playlists/{}", working_directory, args[3])
+			file_path := fmt.tprintf("{}/climp/playlists/{}", data_directory, args[3])
 			file_data, err := os.read_entire_file(file_path, context.allocator)
 			if err != nil {
 				fmt.eprintfln("Failed to read %s: %w", file_path, err)
@@ -239,7 +237,7 @@ main :: proc() {
 			}
 		case ".txt":
 			// playlist
-			file_path = fmt.tprintf("{}/data/playlists/{}", working_directory, args[2])
+			file_path = fmt.tprintf("{}/climp/playlists/{}", data_directory, args[2])
 		case:
 			// audio file
 			fmt.printfln("Cannot add to an audio file")
