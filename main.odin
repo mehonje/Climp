@@ -24,6 +24,8 @@ Bar_Style :: enum {
 }
 
 main :: proc() {
+	defer fmt.print("\n") // add newline so terminal prompt begins on new line
+
 	args: [dynamic]string
 	defer delete(args)
 	for arg in os.args {
