@@ -24,7 +24,7 @@ Bar_Style :: enum {
 }
 
 main :: proc() {
-	defer fmt.print("\n") // add newline so terminal prompt begins on new line
+	defer fmt.print("\r\n") // add newline so terminal prompt begins on new line
 
 	args: [dynamic]string
 	defer delete(args)
@@ -253,7 +253,7 @@ main :: proc() {
 		defer strings.builder_destroy(&builder)
 		for line in add_lines {
 			strings.write_string(&builder, line)
-			strings.write_byte(&builder, '\n')
+			strings.write_string(&builder, "\r\n")
 		}
 		str := strings.to_string(builder)
 		fmt.println("---", str, "---")
@@ -443,22 +443,24 @@ print_ui :: proc(
 
 	strings.write_string(&builder, "\033[H\033[2J")
 
-	str := fmt.tprintf("%02d:%02d ", elapsed_minutes, elapsed_seconds)
+	str := fmt.tprintf(" % 2d:%02d ", elapsed_minutes, elapsed_seconds)
 	strings.write_string(&builder, str)
 
-	make_progress_bar(&builder, math.floor(elapsed), length, 20, bar_style)
+	bar_length := max(20, len(name) + 3 + len(artist))
 
-	str = fmt.tprintf(" %02d:%02d", length_minutes, length_seconds)
+	make_progress_bar(&builder, math.floor(elapsed), length, bar_length, bar_style)
+
+	str = fmt.tprintf(" %d:%02d", length_minutes, length_seconds)
 	strings.write_string(&builder, str)
 
-	str = fmt.tprintf("\r\n{} - {}", name, artist)
+	str = fmt.tprintf("\r\n       {} - {}", name, artist)
 	strings.write_string(&builder, str)
 
-	strings.write_string(&builder, "\nVolume ")
+	strings.write_string(&builder, "\r\nVolume ")
 
-	make_progress_bar(&builder, f32(volume) / 100.0, 1.0, 20, bar_style)
+	make_progress_bar(&builder, f32(volume) / 100.0, 1.0, bar_length, bar_style)
 
-	str = fmt.tprintf(" %d%%", volume)
+	str = fmt.tprintf(" % 3d%%", volume)
 	strings.write_string(&builder, str)
 
 	if paused {
